@@ -15,6 +15,7 @@
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/resource-timegrid": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@supabase/supabase-js": "^2.101.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "uuid": "^13.0.0",
