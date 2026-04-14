@@ -1,4 +1,12 @@
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
+
+const ROLE_LABEL = { admin: 'Administrador', editor: 'Editor', viewer: 'Visualizador' }
+const ROLE_STYLE = {
+  admin:  { bg: '#ede9fe', color: '#6d28d9' },
+  editor: { bg: '#dbeafe', color: '#1d4ed8' },
+  viewer: { bg: '#f1f5f9', color: '#475569' },
+}
 
 const NAV_ITEMS = [
   {
@@ -34,6 +42,9 @@ const NAV_ITEMS = [
 export default function Layout({ view, onViewChange, children }) {
   const current = NAV_ITEMS.find((i) => i.id === view)
   const { activeCentro } = useApp()
+  const { session, role, logout } = useAuth()
+  const email = session?.user?.email ?? ''
+  const roleStyle = ROLE_STYLE[role] ?? ROLE_STYLE.viewer
 
   return (
     <div className="flex h-screen w-full" style={{ background: '#f0f4f8' }}>
@@ -104,9 +115,29 @@ export default function Layout({ view, onViewChange, children }) {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-white/10">
-          <p className="text-white/25 text-xs text-center">v1.0.0</p>
+        {/* Usuario + logout */}
+        <div className="px-3 py-3 border-t border-white/10 space-y-2">
+          <div className="px-3">
+            <p className="text-white/60 text-xs truncate">{email}</p>
+            <span
+              className="inline-block text-xs font-medium px-2 py-0.5 rounded-full mt-1"
+              style={{ backgroundColor: roleStyle.bg, color: roleStyle.color }}
+            >
+              {ROLE_LABEL[role] ?? role}
+            </span>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp, CATEGORIES, DAYS, timeToMin } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
 
 const FTE_FULL_HOURS = 39
 
@@ -271,22 +272,28 @@ function DoctorCard({ doc, onEdit, onDelete }) {
       </div>
 
       {/* Acciones */}
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <button onClick={onEdit}
-          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-          title="Editar">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </button>
-        <button onClick={onDelete}
-          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-          title="Eliminar">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
+      {(onEdit || onDelete) && (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {onEdit && (
+            <button onClick={onEdit}
+              className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Editar">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={onDelete}
+              className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Eliminar">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -296,6 +303,8 @@ const CATEGORY_ORDER = ['AP', 'MDT', 'TMT']
 
 export default function DoctorPanel() {
   const { doctors, addDoctor, updateDoctor, deleteDoctor, activeCentro } = useApp()
+  const { role } = useAuth()
+  const canWrite = role === 'admin' || role === 'editor'
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
 
@@ -354,7 +363,7 @@ export default function DoctorPanel() {
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">{totalDocs} médico{totalDocs !== 1 ? 's' : ''} registrado{totalDocs !== 1 ? 's' : ''}</p>
         </div>
-        {!adding && (
+        {!adding && canWrite && (
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-xl transition-opacity hover:opacity-90"
@@ -407,8 +416,8 @@ export default function DoctorPanel() {
                   <DoctorCard
                     key={doc.id}
                     doc={doc}
-                    onEdit={() => setEditingId(doc.id)}
-                    onDelete={() => window.confirm(`¿Eliminar a ${doc.name}?`) && deleteDoctor(doc.id)}
+                    onEdit={canWrite ? () => setEditingId(doc.id) : null}
+                    onDelete={canWrite ? () => window.confirm(`¿Eliminar a ${doc.name}?`) && deleteDoctor(doc.id) : null}
                   />
                 )
               )}

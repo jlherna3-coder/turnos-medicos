@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useAuth } from '../context/AuthContext'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b']
 
@@ -130,20 +131,26 @@ function CenterCard({ centro, territorioColor, isActive, onSelect, onEdit, onDel
         )}
       </div>
 
-      {/* Acciones — stop propagation para no activar el centro al hacer click en editar */}
-      <div
-        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onEdit}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-          <IconEdit />
-        </button>
-        <button onClick={onDelete}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-          <IconDelete />
-        </button>
-      </div>
+      {/* Acciones — solo si hay handlers */}
+      {(onEdit || onDelete) && (
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onEdit && (
+            <button onClick={onEdit}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+              <IconEdit />
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={onDelete}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+              <IconDelete />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -180,16 +187,22 @@ function AgencySection({ agencia, centros, territorioColor, activeCentroId, onSe
             <span className="ml-1 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
           )}
         </button>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setEditing(true)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-white transition-colors">
-            <IconEdit />
-          </button>
-          <button onClick={() => window.confirm(`¿Eliminar agencia "${agencia.name}" y sus centros?`) && onDeleteAgencia(agencia.id)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-white transition-colors">
-            <IconDelete />
-          </button>
-        </div>
+        {(onUpdateAgencia || onDeleteAgencia) && (
+          <div className="flex items-center gap-1">
+            {onUpdateAgencia && (
+              <button onClick={() => setEditing(true)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-white transition-colors">
+                <IconEdit />
+              </button>
+            )}
+            {onDeleteAgencia && (
+              <button onClick={() => window.confirm(`¿Eliminar agencia "${agencia.name}" y sus centros?`) && onDeleteAgencia(agencia.id)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-white transition-colors">
+                <IconDelete />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {open && (
@@ -213,13 +226,13 @@ function AgencySection({ agencia, centros, territorioColor, activeCentroId, onSe
                 territorioColor={territorioColor}
                 isActive={c.id === activeCentroId}
                 onSelect={() => onSelectCentro(c.id)}
-                onEdit={() => setEditingCentroId(c.id)}
-                onDelete={() => window.confirm(`¿Eliminar "${c.name}"?`) && onDeleteCentro(c.id)}
+                onEdit={onUpdateCentro ? () => setEditingCentroId(c.id) : null}
+                onDelete={onDeleteCentro ? () => window.confirm(`¿Eliminar "${c.name}"?`) && onDeleteCentro(c.id) : null}
               />
             )
           )}
 
-          {addingCentro ? (
+          {onAddCentro && (addingCentro ? (
             <InlineForm
               fields={[
                 { key: 'name',    label: 'Nombre del centro', placeholder: 'CESFAM ...', required: true },
@@ -234,7 +247,7 @@ function AgencySection({ agencia, centros, territorioColor, activeCentroId, onSe
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-blue-600 hover:bg-white border border-dashed border-gray-200 hover:border-blue-200 transition-all">
               <IconPlus /> Agregar centro
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -289,16 +302,22 @@ function TerritoryCard({ territorio, agencias, centros, activeCentroId, onSelect
           )}
           <span className="text-gray-400 ml-auto"><IconChevron open={open} /></span>
         </button>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={() => setEditing(true)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-white/70 transition-colors">
-            <IconEdit />
-          </button>
-          <button onClick={() => window.confirm(`¿Eliminar territorio "${territorio.name}" y toda su estructura?`) && onDeleteTerritorio(territorio.id)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-white/70 transition-colors">
-            <IconDelete />
-          </button>
-        </div>
+        {(onUpdateTerritorio || onDeleteTerritorio) && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {onUpdateTerritorio && (
+              <button onClick={() => setEditing(true)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-white/70 transition-colors">
+                <IconEdit />
+              </button>
+            )}
+            {onDeleteTerritorio && (
+              <button onClick={() => window.confirm(`¿Eliminar territorio "${territorio.name}" y toda su estructura?`) && onDeleteTerritorio(territorio.id)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-white/70 transition-colors">
+                <IconDelete />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {open && (
@@ -319,7 +338,7 @@ function TerritoryCard({ territorio, agencias, centros, activeCentroId, onSelect
             />
           ))}
 
-          {addingAgencia ? (
+          {onAddAgencia && (addingAgencia ? (
             <InlineForm
               fields={[{ key: 'name', label: 'Nombre de agencia', placeholder: 'Agencia ...', required: true }]}
               initial={{ name: '' }}
@@ -331,7 +350,7 @@ function TerritoryCard({ territorio, agencias, centros, activeCentroId, onSelect
               className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium text-gray-400 hover:text-blue-600 hover:bg-gray-50 border border-dashed border-gray-200 hover:border-blue-200 transition-all">
               <IconPlus /> Agregar agencia
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -348,6 +367,9 @@ export default function CentersView() {
     addAgencia,    updateAgencia,    deleteAgencia,
     addCentro,     updateCentro,     deleteCentro,
   } = useApp()
+
+  const { role } = useAuth()
+  const canWrite = role === 'admin'
 
   const [addingTerritorio, setAddingTerritorio] = useState(false)
 
@@ -403,19 +425,19 @@ export default function CentersView() {
           centros={centros}
           activeCentroId={activeCentroId}
           onSelectCentro={setActiveCentroId}
-          onUpdateTerritorio={updateTerritorio}
-          onDeleteTerritorio={deleteTerritorio}
-          onAddAgencia={addAgencia}
-          onUpdateAgencia={updateAgencia}
-          onDeleteAgencia={deleteAgencia}
-          onAddCentro={addCentro}
-          onUpdateCentro={updateCentro}
-          onDeleteCentro={deleteCentro}
+          onUpdateTerritorio={canWrite ? updateTerritorio : null}
+          onDeleteTerritorio={canWrite ? deleteTerritorio : null}
+          onAddAgencia={canWrite ? addAgencia : null}
+          onUpdateAgencia={canWrite ? updateAgencia : null}
+          onDeleteAgencia={canWrite ? deleteAgencia : null}
+          onAddCentro={canWrite ? addCentro : null}
+          onUpdateCentro={canWrite ? updateCentro : null}
+          onDeleteCentro={canWrite ? deleteCentro : null}
         />
       ))}
 
-      {/* Agregar territorio */}
-      {addingTerritorio ? (
+      {/* Agregar territorio — solo admin */}
+      {canWrite && (addingTerritorio ? (
         <div className="rounded-2xl border border-blue-100 overflow-hidden shadow-sm bg-white p-5">
           <p className="text-sm font-semibold text-gray-900 mb-3">Nuevo territorio</p>
           <InlineForm
@@ -431,7 +453,7 @@ export default function CentersView() {
           className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-medium text-gray-400 hover:text-blue-600 border-2 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all">
           <IconPlus /> Agregar territorio
         </button>
-      )}
+      ))}
     </div>
   )
 }
