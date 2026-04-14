@@ -159,20 +159,33 @@ export function AppProvider({ children }) {
     async function loadData() {
       setLoading(true)
 
-      const [{ data: tData }, { data: aData }, { data: cData }, { data: dData }] =
-        await Promise.all([
-          supabase.from('territorios').select('*').order('name'),
-          supabase.from('agencias').select('*').order('name'),
-          supabase.from('centros').select('*').order('name'),
-          supabase.from('doctors').select('*').order('name'),
-        ])
+      const [
+        { data: tData, error: tErr },
+        { data: aData, error: aErr },
+        { data: cData, error: cErr },
+        { data: dData, error: dErr },
+      ] = await Promise.all([
+        supabase.from('territorios').select('*').order('name'),
+        supabase.from('agencias').select('*').order('name'),
+        supabase.from('centros').select('*').order('name'),
+        supabase.from('doctors').select('*').order('name'),
+      ])
+
+      if (tErr || aErr || cErr || dErr) {
+        console.error('Error cargando datos:', { tErr, aErr, cErr, dErr })
+      }
 
       // Si las tablas están vacías, insertar seed
       if (!tData || tData.length === 0) {
-        await supabase.from('territorios').insert(SEED_TERRITORIOS)
-        await supabase.from('agencias').insert(SEED_AGENCIAS)
-        await supabase.from('centros').insert(SEED_CENTROS)
-        await supabase.from('doctors').insert(SEED_DOCTORS)
+        const [r1, r2, r3, r4] = await Promise.all([
+          supabase.from('territorios').insert(SEED_TERRITORIOS),
+          supabase.from('agencias').insert(SEED_AGENCIAS),
+          supabase.from('centros').insert(SEED_CENTROS),
+          supabase.from('doctors').insert(SEED_DOCTORS),
+        ])
+        if (r1.error || r2.error || r3.error || r4.error) {
+          console.error('Error insertando seed:', { r1: r1.error, r2: r2.error, r3: r3.error, r4: r4.error })
+        }
 
         setTerritorios(SEED_TERRITORIOS)
         setAgencias(SEED_AGENCIAS.map(mapAgencia))
@@ -200,43 +213,63 @@ export function AppProvider({ children }) {
     if (activeCentro) updateCentro(activeCentro.id, { schedule })
   }
 
+  // ── Helper: log y alerta de errores DB ──
+  const dbErr = (op, error) => {
+    if (!error) return false
+    console.error(`[Supabase] ${op}:`, error)
+    alert(`Error guardando datos (${op}): ${error.message}`)
+    return true
+  }
+
   // ── CRUD doctores ──
   const addDoctor = async (d) => {
-    const newDoc = { ...d, id: uuidv4(), centro_id: activeCentroId, weekly_template: DEFAULT_DOCTOR_TEMPLATE }
-    await supabase.from('doctors').insert(newDoc)
+    const newDoc = {
+      id: uuidv4(),
+      name: d.name,
+      category: d.category,
+      color: d.color,
+      centro_id: activeCentroId,
+      weekly_template: DEFAULT_DOCTOR_TEMPLATE,
+    }
+    const { error } = await supabase.from('doctors').insert(newDoc)
+    if (dbErr('addDoctor', error)) return
     setDoctors((p) => [...p, mapDoctor(newDoc)])
   }
 
   const updateDoctor = async (id, data) => {
     const dbData = {}
-    if (data.name)           dbData.name = data.name
-    if (data.category)       dbData.category = data.category
-    if (data.color)          dbData.color = data.color
-    if (data.weeklyTemplate) dbData.weekly_template = data.weeklyTemplate
-    await supabase.from('doctors').update(dbData).eq('id', id)
+    if (data.name     !== undefined) dbData.name            = data.name
+    if (data.category !== undefined) dbData.category        = data.category
+    if (data.color    !== undefined) dbData.color           = data.color
+    if (data.weeklyTemplate !== undefined) dbData.weekly_template = data.weeklyTemplate
+    const { error } = await supabase.from('doctors').update(dbData).eq('id', id)
+    if (dbErr('updateDoctor', error)) return
     setDoctors((p) => p.map((d) => d.id === id ? { ...d, ...data } : d))
   }
 
   const deleteDoctor = async (id) => {
-    await supabase.from('doctors').delete().eq('id', id)
+    const { error } = await supabase.from('doctors').delete().eq('id', id)
+    if (dbErr('deleteDoctor', error)) return
     setDoctors((p) => p.filter((d) => d.id !== id))
   }
 
-  // ── CRUD territorios (cascade manejado por DB) ──
+  // ── CRUD territorios ──
   const addTerritorio = async (t) => {
-    const newT = { ...t, id: uuidv4() }
-    await supabase.from('territorios').insert(newT)
+    const newT = { id: uuidv4(), name: t.name, color: t.color }
+    const { error } = await supabase.from('territorios').insert(newT)
+    if (dbErr('addTerritorio', error)) return
     setTerritorios((p) => [...p, newT])
   }
 
   const updateTerritorio = async (id, data) => {
-    await supabase.from('territorios').update(data).eq('id', id)
+    const { error } = await supabase.from('territorios').update(data).eq('id', id)
+    if (dbErr('updateTerritorio', error)) return
     setTerritorios((p) => p.map((t) => t.id === id ? { ...t, ...data } : t))
   }
 
   const deleteTerritorio = async (id) => {
-    // Cascade: la DB borra agencias → centros → doctors automáticamente
-    await supabase.from('territorios').delete().eq('id', id)
+    const { error } = await supabase.from('territorios').delete().eq('id', id)
+    if (dbErr('deleteTerritorio', error)) return
     const agIds = agencias.filter((a) => a.territorioId === id).map((a) => a.id)
     const centroIds = centros.filter((c) => agIds.includes(c.agenciaId)).map((c) => c.id)
     setDoctors((p) => p.filter((d) => !centroIds.includes(d.centroId)))
@@ -247,18 +280,21 @@ export function AppProvider({ children }) {
 
   // ── CRUD agencias ──
   const addAgencia = async (a) => {
-    const newA = { ...a, id: uuidv4(), territorio_id: a.territorioId }
-    await supabase.from('agencias').insert(newA)
+    const newA = { id: uuidv4(), name: a.name, territorio_id: a.territorioId }
+    const { error } = await supabase.from('agencias').insert(newA)
+    if (dbErr('addAgencia', error)) return
     setAgencias((p) => [...p, mapAgencia(newA)])
   }
 
   const updateAgencia = async (id, data) => {
-    await supabase.from('agencias').update(data).eq('id', id)
+    const { error } = await supabase.from('agencias').update({ name: data.name }).eq('id', id)
+    if (dbErr('updateAgencia', error)) return
     setAgencias((p) => p.map((a) => a.id === id ? { ...a, ...data } : a))
   }
 
   const deleteAgencia = async (id) => {
-    await supabase.from('agencias').delete().eq('id', id)
+    const { error } = await supabase.from('agencias').delete().eq('id', id)
+    if (dbErr('deleteAgencia', error)) return
     const centroIds = centros.filter((c) => c.agenciaId === id).map((c) => c.id)
     setDoctors((p) => p.filter((d) => !centroIds.includes(d.centroId)))
     setCentros((p) => p.filter((c) => c.agenciaId !== id))
@@ -267,22 +303,25 @@ export function AppProvider({ children }) {
 
   // ── CRUD centros ──
   const addCentro = async (c) => {
-    const newC = { ...c, id: uuidv4(), agencia_id: c.agenciaId, schedule: DEFAULT_CENTER_SCHEDULE }
-    await supabase.from('centros').insert(newC)
+    const newC = { id: uuidv4(), name: c.name, agencia_id: c.agenciaId, address: c.address ?? '', schedule: DEFAULT_CENTER_SCHEDULE }
+    const { error } = await supabase.from('centros').insert(newC)
+    if (dbErr('addCentro', error)) return
     setCentros((p) => [...p, mapCentro(newC)])
   }
 
   const updateCentro = async (id, data) => {
     const dbData = {}
-    if (data.name)     dbData.name = data.name
-    if (data.address !== undefined) dbData.address = data.address
-    if (data.schedule) dbData.schedule = data.schedule
-    await supabase.from('centros').update(dbData).eq('id', id)
+    if (data.name     !== undefined) dbData.name     = data.name
+    if (data.address  !== undefined) dbData.address  = data.address
+    if (data.schedule !== undefined) dbData.schedule = data.schedule
+    const { error } = await supabase.from('centros').update(dbData).eq('id', id)
+    if (dbErr('updateCentro', error)) return
     setCentros((p) => p.map((c) => c.id === id ? { ...c, ...data } : c))
   }
 
   const deleteCentro = async (id) => {
-    await supabase.from('centros').delete().eq('id', id)
+    const { error } = await supabase.from('centros').delete().eq('id', id)
+    if (dbErr('deleteCentro', error)) return
     setDoctors((p) => p.filter((d) => d.centroId !== id))
     setCentros((p) => p.filter((c) => c.id !== id))
   }
