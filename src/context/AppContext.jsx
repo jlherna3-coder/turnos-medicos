@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useCallback, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { supabase } from '../lib/supabase'
 
@@ -154,55 +154,80 @@ export function AppProvider({ children }) {
     localStorage.setItem('activeCentro_v1', activeCentroId)
   }, [activeCentroId])
 
-  // ── Cargar datos iniciales desde Supabase ──
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
+  // ── Cargar datos desde Supabase ──
+  const loadData = useCallback(async () => {
+    const [
+      { data: tData, error: tErr },
+      { data: aData, error: aErr },
+      { data: cData, error: cErr },
+      { data: dData, error: dErr },
+    ] = await Promise.all([
+      supabase.from('territorios').select('*').order('name'),
+      supabase.from('agencias').select('*').order('name'),
+      supabase.from('centros').select('*').order('name'),
+      supabase.from('doctors').select('*').order('name'),
+    ])
 
-      const [
-        { data: tData, error: tErr },
-        { data: aData, error: aErr },
-        { data: cData, error: cErr },
-        { data: dData, error: dErr },
-      ] = await Promise.all([
-        supabase.from('territorios').select('*').order('name'),
-        supabase.from('agencias').select('*').order('name'),
-        supabase.from('centros').select('*').order('name'),
-        supabase.from('doctors').select('*').order('name'),
-      ])
-
-      if (tErr || aErr || cErr || dErr) {
-        console.error('Error cargando datos:', { tErr, aErr, cErr, dErr })
-      }
-
-      // Si las tablas están vacías, insertar seed
-      if (!tData || tData.length === 0) {
-        const [r1, r2, r3, r4] = await Promise.all([
-          supabase.from('territorios').insert(SEED_TERRITORIOS),
-          supabase.from('agencias').insert(SEED_AGENCIAS),
-          supabase.from('centros').insert(SEED_CENTROS),
-          supabase.from('doctors').insert(SEED_DOCTORS),
-        ])
-        if (r1.error || r2.error || r3.error || r4.error) {
-          console.error('Error insertando seed:', { r1: r1.error, r2: r2.error, r3: r3.error, r4: r4.error })
-        }
-
-        setTerritorios(SEED_TERRITORIOS)
-        setAgencias(SEED_AGENCIAS.map(mapAgencia))
-        setCentros(SEED_CENTROS.map(mapCentro))
-        setDoctors(SEED_DOCTORS.map(mapDoctor))
-      } else {
-        setTerritorios(tData)
-        setAgencias((aData ?? []).map(mapAgencia))
-        setCentros((cData ?? []).map(mapCentro))
-        setDoctors((dData ?? []).map(mapDoctor))
-      }
-
-      setLoading(false)
+    if (tErr || aErr || cErr || dErr) {
+      console.error('Error cargando datos:', { tErr, aErr, cErr, dErr })
+      return
     }
 
-    loadData()
+    // Si las tablas están vacías, insertar seed
+    if (!tData || tData.length === 0) {
+      const [r1, r2, r3, r4] = await Promise.all([
+        supabase.from('territorios').insert(SEED_TERRITORIOS),
+        supabase.from('agencias').insert(SEED_AGENCIAS),
+        supabase.from('centros').insert(SEED_CENTROS),
+        supabase.from('doctors').insert(SEED_DOCTORS),
+      ])
+      if (r1.error || r2.error || r3.error || r4.error) {
+        console.error('Error insertando seed:', { r1: r1.error, r2: r2.error, r3: r3.error, r4: r4.error })
+      }
+      setTerritorios(SEED_TERRITORIOS)
+      setAgencias(SEED_AGENCIAS.map(mapAgencia))
+      setCentros(SEED_CENTROS.map(mapCentro))
+      setDoctors(SEED_DOCTORS.map(mapDoctor))
+    } else {
+      setTerritorios(tData)
+      setAgencias((aData ?? []).map(mapAgencia))
+      setCentros((cData ?? []).map(mapCentro))
+      setDoctors((dData ?? []).map(mapDoctor))
+    }
   }, [])
+
+  // Carga inicial + realtime
+  useEffect(() => {
+    loadData().then(() => setLoading(false))
+
+    // Suscripción realtime: recarga la tabla afectada cuando cualquier
+    // cliente hace un cambio
+    const channel = supabase
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'doctors' },
+        async () => {
+          const { data } = await supabase.from('doctors').select('*').order('name')
+          if (data) setDoctors(data.map(mapDoctor))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'centros' },
+        async () => {
+          const { data } = await supabase.from('centros').select('*').order('name')
+          if (data) setCentros(data.map(mapCentro))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agencias' },
+        async () => {
+          const { data } = await supabase.from('agencias').select('*').order('name')
+          if (data) setAgencias(data.map(mapAgencia))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'territorios' },
+        async () => {
+          const { data } = await supabase.from('territorios').select('*').order('name')
+          if (data) setTerritorios(data)
+        })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [loadData])
 
   // ── Derivados ──
   const activeCentro = centros.find((c) => c.id === activeCentroId) ?? centros[0] ?? null
