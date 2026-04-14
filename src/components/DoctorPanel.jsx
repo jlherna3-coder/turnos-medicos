@@ -1,5 +1,18 @@
 import { useState } from 'react'
-import { useApp, CATEGORIES, DAYS } from '../context/AppContext'
+import { useApp, CATEGORIES, DAYS, timeToMin } from '../context/AppContext'
+
+const FTE_FULL_HOURS = 39
+
+function calcFTE(weeklyTemplate) {
+  if (!weeklyTemplate) return 0
+  const totalMin = Object.values(weeklyTemplate)
+    .filter(Boolean)
+    .reduce((sum, slot) => {
+      const worked = timeToMin(slot.end) - timeToMin(slot.start) - 30 // 30 min colación
+      return sum + Math.max(worked, 0)
+    }, 0)
+  return totalMin / (FTE_FULL_HOURS * 60)
+}
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b']
 
@@ -227,7 +240,7 @@ function DoctorCard({ doc, onEdit, onDelete }) {
           </span>
         </div>
 
-        {/* Días activos */}
+        {/* Días activos + FTE */}
         <div className="mt-2 flex items-center gap-1.5 flex-wrap">
           {DAYS_ABBR.map((key) => {
             const active = Boolean(doc.weeklyTemplate?.[key])
@@ -247,6 +260,13 @@ function DoctorCard({ doc, onEdit, onDelete }) {
           {firstSlot && (
             <span className="text-xs text-gray-400 ml-1">{firstSlot.start} – {firstSlot.end}</span>
           )}
+          <span
+            className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: '#f0fdf4', color: '#15803d' }}
+            title="Full Time Equivalent"
+          >
+            {calcFTE(doc.weeklyTemplate).toFixed(2)} FTE
+          </span>
         </div>
       </div>
 
@@ -287,6 +307,7 @@ export default function DoctorPanel() {
   }))
 
   const totalDocs = doctors.length
+  const totalFTE  = doctors.reduce((sum, d) => sum + calcFTE(d.weeklyTemplate), 0)
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -294,16 +315,31 @@ export default function DoctorPanel() {
       {/* Stats rápidas */}
       <div className="grid grid-cols-3 gap-3">
         {CATEGORY_ORDER.map((cat) => {
-          const count = doctors.filter((d) => d.category === cat).length
-          const badge = CATEGORY_BADGE[cat]
-          const label = CATEGORIES.find((c) => c.value === cat)?.label
+          const catDocs = doctors.filter((d) => d.category === cat)
+          const count   = catDocs.length
+          const fte     = catDocs.reduce((sum, d) => sum + calcFTE(d.weeklyTemplate), 0)
+          const badge   = CATEGORY_BADGE[cat]
+          const label   = CATEGORIES.find((c) => c.value === cat)?.label
           return (
             <div key={cat} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
               <p className="text-2xl font-bold text-gray-900">{count}</p>
               <p className="text-xs font-medium mt-0.5" style={{ color: badge.text }}>{label}</p>
+              <p className="text-xs text-gray-400 mt-1">{fte.toFixed(2)} FTE</p>
             </div>
           )
         })}
+      </div>
+
+      {/* FTE total */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-500">FTE total del centro</p>
+          <p className="text-xs text-gray-400 mt-0.5">Horas semanales trabajadas ÷ 39 hrs (jornada completa)</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-gray-900">{totalFTE.toFixed(2)}</p>
+          <p className="text-xs text-gray-400">de {totalDocs} médico{totalDocs !== 1 ? 's' : ''}</p>
+        </div>
       </div>
 
       {/* Horario del centro */}

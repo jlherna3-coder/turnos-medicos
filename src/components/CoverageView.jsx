@@ -219,7 +219,9 @@ export default function CoverageView() {
       </div>
 
       {/* ── Diagrama ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6" style={{ overflow: 'visible' }}>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 md:p-6">
+        <p className="md:hidden text-xs text-gray-400 mb-3 text-center">← Desliza para ver el diagrama →</p>
+        <div className="overflow-x-auto" style={{ overflow: 'visible' }}>
 
         <TimeAxis rangeStart={rangeStart} rangeEnd={rangeEnd} rangeWidth={rangeWidth} />
 
@@ -302,6 +304,7 @@ export default function CoverageView() {
             <span className="text-xs text-gray-400">Bordes = ajustar entrada/salida</span>
           </div>
         </div>
+        </div>{/* cierre overflow-x-auto */}
       </div>
     </div>
   )
