@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   {
     id: 'centers',
     label: 'Centros',
+    adminOnly: false,
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   {
     id: 'doctors',
     label: 'Médicos',
+    adminOnly: false,
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -31,20 +33,32 @@ const NAV_ITEMS = [
   {
     id: 'coverage',
     label: 'Cobertura',
+    adminOnly: false,
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
   },
+  {
+    id: 'users',
+    label: 'Usuarios',
+    adminOnly: true,
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function Layout({ view, onViewChange, children }) {
-  const current = NAV_ITEMS.find((i) => i.id === view)
   const { activeCentro } = useApp()
   const { session, role, logout } = useAuth()
   const email = session?.user?.email ?? ''
   const roleStyle = ROLE_STYLE[role] ?? ROLE_STYLE.viewer
+  const visibleNav = NAV_ITEMS.filter((i) => !i.adminOnly || role === 'admin')
+  const current = visibleNav.find((i) => i.id === view)
 
   return (
     <div className="flex h-screen w-full" style={{ background: '#f0f4f8' }}>
@@ -74,7 +88,7 @@ export default function Layout({ view, onViewChange, children }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {visibleNav.map((item) => {
             const active = view === item.id
             return (
               <button
@@ -162,6 +176,7 @@ export default function Layout({ view, onViewChange, children }) {
                 {view === 'centers'  && 'Territorios, agencias y centros de salud ambulatorios'}
                 {view === 'doctors'  && 'Gestiona el equipo médico y sus horarios semanales'}
                 {view === 'coverage' && 'Visualiza la cobertura médica por franja horaria'}
+                {view === 'users'    && 'Invita usuarios y gestiona sus permisos de acceso'}
               </p>
             </div>
           </div>
@@ -189,7 +204,7 @@ export default function Layout({ view, onViewChange, children }) {
           className="md:hidden fixed bottom-0 left-0 right-0 flex border-t border-gray-200"
           style={{ background: 'white', zIndex: 50 }}
         >
-          {NAV_ITEMS.map((item) => {
+          {visibleNav.map((item) => {
             const active = view === item.id
             return (
               <button

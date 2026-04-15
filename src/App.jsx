@@ -6,6 +6,7 @@ import LoginView from './components/LoginView'
 import CentersView from './components/CentersView'
 import DoctorPanel from './components/DoctorPanel'
 import CoverageView from './components/CoverageView'
+import UsersView from './components/UsersView'
 
 function AppContent() {
   const { session } = useAuth()
@@ -32,6 +33,7 @@ function AppContent() {
         {view === 'centers'  && <CentersView />}
         {view === 'doctors'  && <DoctorPanel />}
         {view === 'coverage' && <CoverageView />}
+        {view === 'users'    && <UsersView />}
       </Layout>
     </AppProvider>
   )
