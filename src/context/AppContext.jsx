@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useCallback, useState } from 'react'
+import { createContext, useContext, useEffect, useCallback, useState, useMemo } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { supabase } from '../lib/supabase'
+import { useAuth } from './AuthContext'
 
 // ── Catálogos ────────────────────────────────────────────────────────────────
 
@@ -138,6 +139,8 @@ function mapAgencia(a) {
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
+  const { role, canAccessCentro, canWriteCentro } = useAuth()
+
   const [territorios, setTerritorios] = useState([])
   const [agencias, setAgencias]       = useState([])
   const [centros, setCentros]         = useState([])
@@ -230,12 +233,27 @@ export function AppProvider({ children }) {
   }, [loadData])
 
   // ── Derivados ──
-  const activeCentro = centros.find((c) => c.id === activeCentroId) ?? centros[0] ?? null
-  const activeDoctors = doctors.filter((d) => d.centroId === activeCentroId)
+
+  // Centros a los que el usuario tiene acceso (admins ven todos)
+  const accessibleCentros = useMemo(() => {
+    if (role === 'admin') return centros
+    return centros.filter((c) => canAccessCentro(c.id, centros, agencias))
+  }, [centros, agencias, role, canAccessCentro])
+
+  // Si el centro activo dejó de ser accesible, usar el primero disponible
+  const resolvedCentroId = accessibleCentros.some((c) => c.id === activeCentroId)
+    ? activeCentroId
+    : (accessibleCentros[0]?.id ?? activeCentroId)
+
+  const activeCentro = centros.find((c) => c.id === resolvedCentroId) ?? null
+  const activeDoctors = doctors.filter((d) => d.centroId === resolvedCentroId)
   const activeCenterSchedule = activeCentro?.schedule ?? null
 
+  // ¿Puede el usuario escribir en el centro activo?
+  const activeCanWrite = canWriteCentro(resolvedCentroId, centros, agencias)
+
   const setActiveCenterSchedule = (schedule) => {
-    if (activeCentro) updateCentro(activeCentro.id, { schedule })
+    if (activeCentro && activeCanWrite) updateCentro(activeCentro.id, { schedule })
   }
 
   // ── Helper: log y alerta de errores DB ──
@@ -365,12 +383,15 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      activeCentroId, setActiveCentroId,
+      activeCentroId: resolvedCentroId, setActiveCentroId,
       activeCentro,
       activeCenterSchedule, setActiveCenterSchedule,
+      activeCanWrite,
       doctors: activeDoctors,
       addDoctor, updateDoctor, deleteDoctor,
-      territorios, agencias, centros,
+      territorios, agencias,
+      centros: accessibleCentros,   // solo los accesibles para el usuario
+      allCentros: centros,          // todos (para PermissionsModal)
       addTerritorio, updateTerritorio, deleteTerritorio,
       addAgencia,    updateAgencia,    deleteAgencia,
       addCentro,     updateCentro,     deleteCentro,

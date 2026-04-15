@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import PermissionsModal from './PermissionsModal'
 
 const ROLE_OPTIONS = [
   { value: 'admin',  label: 'Administrador', desc: 'Acceso total' },
@@ -32,13 +33,14 @@ export default function UsersView() {
   const { session } = useAuth()
   const token = session?.access_token
 
-  const [users, setUsers]       = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [inviting, setInviting] = useState(false)
-  const [form, setForm]         = useState({ email: '', role: 'editor' })
-  const [saving, setSaving]     = useState(null) // userId que está guardando
-  const [error, setError]       = useState(null)
-  const [success, setSuccess]   = useState(null)
+  const [users, setUsers]             = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [inviting, setInviting]       = useState(false)
+  const [form, setForm]               = useState({ email: '', role: 'editor' })
+  const [saving, setSaving]           = useState(null)
+  const [error, setError]             = useState(null)
+  const [success, setSuccess]         = useState(null)
+  const [permissionsUser, setPermissionsUser] = useState(null) // { id, email }
 
   // Cargar usuarios (profiles + roles)
   const loadUsers = async () => {
@@ -252,15 +254,23 @@ export default function UsersView() {
                   </select>
                 </div>
 
-                {/* Badge + eliminar */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {isBusy ? (
-                    <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  ) : (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full hidden md:inline"
-                      style={{ backgroundColor: roleStyle.bg, color: roleStyle.color }}>
-                      {ROLE_OPTIONS.find((r) => r.value === u.role)?.label ?? 'Sin rol'}
-                    </span>
+                {/* Acciones */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {isBusy && (
+                    <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 8px' }} />
+                  )}
+                  {/* Permisos por centro — solo para editor/viewer */}
+                  {!isSelf && u.role !== 'admin' && (
+                    <button
+                      onClick={() => setPermissionsUser({ id: u.id, email: u.email })}
+                      disabled={isBusy}
+                      className="p-2 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors disabled:opacity-40"
+                      title="Gestionar permisos por centro"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                    </button>
                   )}
                   {!isSelf && (
                     <button
@@ -281,6 +291,14 @@ export default function UsersView() {
         )}
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+
+      {permissionsUser && (
+        <PermissionsModal
+          userId={permissionsUser.id}
+          userEmail={permissionsUser.email}
+          onClose={() => setPermissionsUser(null)}
+        />
+      )}
     </div>
   )
 }
