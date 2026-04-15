@@ -60,6 +60,8 @@ export default function Layout({ view, onViewChange, children }) {
   const visibleNav = NAV_ITEMS.filter((i) => !i.adminOnly || role === 'admin')
   const current = visibleNav.find((i) => i.id === view)
 
+  console.log('[Layout] role:', role, '| visibleNav:', visibleNav.map(i => i.id))
+
   return (
     <div className="flex h-screen w-full" style={{ background: '#f0f4f8' }}>
 
