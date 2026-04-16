@@ -86,7 +86,7 @@ function WeeklyScheduleEditor({ template, onChange }) {
 
 // ── Config horario del centro ──────────────────────────────────────────────
 function CenterScheduleConfig() {
-  const { activeCenterSchedule: centerSchedule, setActiveCenterSchedule: setCenterSchedule, activeCentro } = useApp()
+  const { activeCenterSchedule: centerSchedule, setActiveCenterSchedule: setCenterSchedule, activeCentro, activeCanWrite } = useApp()
   const [open, setOpen] = useState(false)
 
   return (
@@ -114,7 +114,12 @@ function CenterScheduleConfig() {
 
       {open && (
         <div className="px-5 pb-5 border-t border-gray-100">
-          <div className="mt-4">
+          {!activeCanWrite && (
+            <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-4">
+              Solo lectura — no tienes permiso de escritura en este centro.
+            </p>
+          )}
+          <div className="mt-4" style={{ pointerEvents: activeCanWrite ? 'auto' : 'none', opacity: activeCanWrite ? 1 : 0.6 }}>
             <WeeklyScheduleEditor
               template={centerSchedule}
               onChange={setCenterSchedule}
@@ -302,9 +307,8 @@ function DoctorCard({ doc, onEdit, onDelete }) {
 const CATEGORY_ORDER = ['AP', 'MDT', 'TMT']
 
 export default function DoctorPanel() {
-  const { doctors, addDoctor, updateDoctor, deleteDoctor, activeCentro } = useApp()
-  const { role } = useAuth()
-  const canWrite = role === 'admin' || role === 'editor'
+  const { doctors, addDoctor, updateDoctor, deleteDoctor, activeCentro, activeCanWrite } = useApp()
+  const canWrite = activeCanWrite
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
 

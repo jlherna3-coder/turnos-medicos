@@ -26,7 +26,7 @@ function Tooltip({ text }) {
   )
 }
 
-export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth, trackRef, onChange, showLunch }) {
+export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth, trackRef, onChange, showLunch, readOnly }) {
   const [hovered, setHovered] = useState(false)
   const { displaySlot, dragMode, startDrag } = useDragShift({ slot, rangeStart, rangeWidth, trackRef, onChange })
 
@@ -60,7 +60,7 @@ export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth,
           left:            `${leftPct}%`,
           width:           `${widthPct}%`,
           backgroundColor: color,
-          cursor:          isDragging && dragMode === 'move' ? 'grabbing' : 'grab',
+          cursor:          readOnly ? 'default' : isDragging && dragMode === 'move' ? 'grabbing' : 'grab',
           userSelect:      'none',
           boxShadow:       isDragging ? `0 4px 16px ${color}60` : isHovered ? `0 2px 8px ${color}40` : 'none',
           transition:      isDragging ? 'box-shadow 0.1s' : 'box-shadow 0.2s',
@@ -68,7 +68,7 @@ export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth,
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        onMouseDown={(e) => startDrag(e, 'move')}
+        onMouseDown={readOnly ? undefined : (e) => startDrag(e, 'move')}
       >
         {/* Etiqueta de horas */}
         {widthPct > 10 && (
@@ -86,13 +86,13 @@ export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth,
           className="absolute top-0 bottom-0 left-0 rounded-l-xl flex items-center justify-center gap-0.5 z-20"
           style={{
             width:      HANDLE_PX,
-            cursor:     'ew-resize',
-            opacity:    isHovered ? 1 : 0,
+            cursor:     readOnly ? 'default' : 'ew-resize',
+            opacity:    readOnly ? 0 : isHovered ? 1 : 0,
             background: 'rgba(0,0,0,0.18)',
             transition: 'opacity 0.15s',
           }}
           onMouseEnter={() => setHovered(true)}
-          onMouseDown={(e) => { e.stopPropagation(); startDrag(e, 'left') }}
+          onMouseDown={readOnly ? undefined : (e) => { e.stopPropagation(); startDrag(e, 'left') }}
         >
           <div className="w-px h-3.5 bg-white/80 rounded-full" />
           <div className="w-px h-3.5 bg-white/80 rounded-full" />
@@ -106,12 +106,12 @@ export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth,
             style={{
               left:    `${((lunch.start - startMin) / duration) * 100}%`,
               width:   `${(LUNCH_DURATION / duration) * 100}%`,
-              cursor:  'ew-resize',
+              cursor:  readOnly ? 'default' : 'ew-resize',
               background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0px, rgba(255,255,255,0.28) 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 6px)',
               borderLeft:  '1.5px solid rgba(255,255,255,0.55)',
               borderRight: '1.5px solid rgba(255,255,255,0.55)',
             }}
-            onMouseDown={(e) => { e.stopPropagation(); startDrag(e, 'lunch') }}
+            onMouseDown={readOnly ? undefined : (e) => { e.stopPropagation(); startDrag(e, 'lunch') }}
           />
         )}
 
@@ -121,13 +121,13 @@ export default function DraggableShiftBar({ slot, color, rangeStart, rangeWidth,
           className="absolute top-0 bottom-0 right-0 rounded-r-xl flex items-center justify-center gap-0.5 z-20"
           style={{
             width:      HANDLE_PX,
-            cursor:     'ew-resize',
-            opacity:    isHovered ? 1 : 0,
+            cursor:     readOnly ? 'default' : 'ew-resize',
+            opacity:    readOnly ? 0 : isHovered ? 1 : 0,
             background: 'rgba(0,0,0,0.18)',
             transition: 'opacity 0.15s',
           }}
           onMouseEnter={() => setHovered(true)}
-          onMouseDown={(e) => { e.stopPropagation(); startDrag(e, 'right') }}
+          onMouseDown={readOnly ? undefined : (e) => { e.stopPropagation(); startDrag(e, 'right') }}
         >
           <div className="w-px h-3.5 bg-white/80 rounded-full" />
           <div className="w-px h-3.5 bg-white/80 rounded-full" />

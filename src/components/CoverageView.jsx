@@ -119,7 +119,8 @@ function DoctorRow({ doc, selectedDay, rangeStart, rangeWidth, onSlotChange }) {
             rangeWidth={rangeWidth}
             trackRef={trackRef}
             showLunch
-            onChange={onSlotChange}
+            onChange={onSlotChange ?? (() => {})}
+            readOnly={!onSlotChange}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -134,7 +135,7 @@ function DoctorRow({ doc, selectedDay, rangeStart, rangeWidth, onSlotChange }) {
 // ── Vista principal ─────────────────────────────────────────────────────────
 
 export default function CoverageView() {
-  const { doctors, activeCenterSchedule: centerSchedule, activeCentro, updateDoctor } = useApp()
+  const { doctors, activeCenterSchedule: centerSchedule, activeCentro, updateDoctor, activeCanWrite } = useApp()
   const [selectedDay, setSelectedDay] = useState('mon')
 
   const centerSlot = centerSchedule?.[selectedDay]
@@ -271,7 +272,7 @@ export default function CoverageView() {
                       selectedDay={selectedDay}
                       rangeStart={rangeStart}
                       rangeWidth={rangeWidth}
-                      onSlotChange={(newSlot) => handleSlotChange(doc.id, newSlot)}
+                      onSlotChange={activeCanWrite ? (newSlot) => handleSlotChange(doc.id, newSlot) : null}
                     />
                   ))
                 )}
