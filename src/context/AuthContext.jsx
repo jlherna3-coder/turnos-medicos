@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [session, setSession]       = useState(undefined) // undefined = cargando
-  const [role, setRole]             = useState(null)
-  const [permissions, setPermissions] = useState([]) // user_permissions rows
+  const [session, setSession]           = useState(undefined) // undefined = cargando
+  const [role, setRole]                 = useState(null)
+  const [permissions, setPermissions]   = useState([])
+  const [needsPassword, setNeedsPassword] = useState(false) // llegó via link de invitación
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -14,7 +15,20 @@ export function AuthProvider({ children }) {
       if (session) fetchUserData(session.user.id)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Cuando el usuario llega desde el email de invitación, Supabase
+      // genera una sesión automáticamente con event = 'SIGNED_IN' pero
+      // el usuario aún no tiene contraseña propia — lo detectamos por
+      // el hash de la URL que incluye type=invite
+      if (event === 'SIGNED_IN') {
+        const hash   = window.location.hash
+        const params = new URLSearchParams(hash.replace('#', ''))
+        if (params.get('type') === 'invite') {
+          setNeedsPassword(true)
+          // Limpiar el hash de la URL sin recargar
+          window.history.replaceState(null, '', window.location.pathname)
+        }
+      }
       setSession(session)
       if (session) fetchUserData(session.user.id)
       else { setRole(null); setPermissions([]) }
@@ -61,7 +75,10 @@ export function AuthProvider({ children }) {
   const logout = () => supabase.auth.signOut()
 
   return (
-    <AuthContext.Provider value={{ session, role, permissions, login, logout, canAccessCentro, canWriteCentro }}>
+    <AuthContext.Provider value={{
+      session, role, permissions, needsPassword, setNeedsPassword,
+      login, logout, canAccessCentro, canWriteCentro,
+    }}>
       {children}
     </AuthContext.Provider>
   )

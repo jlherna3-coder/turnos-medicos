@@ -3,13 +3,14 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppProvider } from './context/AppContext'
 import Layout from './components/Layout'
 import LoginView from './components/LoginView'
+import SetPasswordView from './components/SetPasswordView'
 import CentersView from './components/CentersView'
 import DoctorPanel from './components/DoctorPanel'
 import CoverageView from './components/CoverageView'
 import UsersView from './components/UsersView'
 
 function AppContent() {
-  const { session } = useAuth()
+  const { session, needsPassword, setNeedsPassword } = useAuth()
   const [view, setView] = useState('centers')
 
   // undefined = todavía cargando la sesión
@@ -26,6 +27,8 @@ function AppContent() {
   }
 
   if (!session) return <LoginView />
+
+  if (needsPassword) return <SetPasswordView onDone={() => setNeedsPassword(false)} />
 
   return (
     <AppProvider>
