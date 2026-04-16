@@ -33,16 +33,20 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Solo administradores pueden gestionar usuarios' })
   }
 
-  const { action, email, userId, role } = req.body
+  const { action, email, password, userId, role } = req.body
 
-  // ── Invitar usuario nuevo ──
-  if (action === 'invite') {
-    if (!email || !role) return res.status(400).json({ error: 'Faltan campos' })
+  // ── Crear usuario con contraseña ──
+  if (action === 'create') {
+    if (!email || !password || !role) return res.status(400).json({ error: 'Faltan campos' })
+    if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' })
 
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // no requiere confirmar email
+    })
     if (error) return res.status(400).json({ error: error.message })
 
-    // Asignar rol
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .upsert({ user_id: data.user.id, role })
@@ -50,6 +54,16 @@ export default async function handler(req, res) {
     if (roleError) return res.status(400).json({ error: roleError.message })
 
     return res.status(200).json({ ok: true, userId: data.user.id })
+  }
+
+  // ── Resetear contraseña (admin la cambia) ──
+  if (action === 'reset_password') {
+    if (!userId || !password) return res.status(400).json({ error: 'Faltan campos' })
+    if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' })
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password })
+    if (error) return res.status(400).json({ error: error.message })
+    return res.status(200).json({ ok: true })
   }
 
   // ── Cambiar rol ──

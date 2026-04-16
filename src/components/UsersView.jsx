@@ -35,12 +35,14 @@ export default function UsersView() {
 
   const [users, setUsers]             = useState([])
   const [loading, setLoading]         = useState(true)
-  const [inviting, setInviting]       = useState(false)
-  const [form, setForm]               = useState({ email: '', role: 'editor' })
+  const [creating, setCreating]       = useState(false)
+  const [form, setForm]               = useState({ email: '', password: '', role: 'editor' })
   const [saving, setSaving]           = useState(null)
   const [error, setError]             = useState(null)
   const [success, setSuccess]         = useState(null)
-  const [permissionsUser, setPermissionsUser] = useState(null) // { id, email }
+  const [permissionsUser, setPermissionsUser] = useState(null)
+  const [resetUser, setResetUser]     = useState(null) // { id, email }
+  const [newPassword, setNewPassword] = useState('')
 
   // Cargar usuarios (profiles + roles)
   const loadUsers = async () => {
@@ -60,16 +62,32 @@ export default function UsersView() {
     setTimeout(() => setSuccess(null), 3000)
   }
 
-  const handleInvite = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault()
     setError(null)
-    setSaving('invite')
+    setSaving('create')
     try {
-      await callApi('invite', form, token)
-      setForm({ email: '', role: 'editor' })
-      setInviting(false)
-      showSuccess(`Invitación enviada a ${form.email}`)
+      await callApi('create', form, token)
+      setForm({ email: '', password: '', role: 'editor' })
+      setCreating(false)
+      showSuccess(`Usuario ${form.email} creado`)
       await loadUsers()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setSaving(resetUser.id)
+    try {
+      await callApi('reset_password', { userId: resetUser.id, password: newPassword }, token)
+      setResetUser(null)
+      setNewPassword('')
+      showSuccess(`Contraseña de ${resetUser.email} actualizada`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -147,25 +165,25 @@ export default function UsersView() {
           <h2 className="text-sm font-semibold text-gray-900">Usuarios</h2>
           <p className="text-xs text-gray-400 mt-0.5">{users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}</p>
         </div>
-        {!inviting && (
+        {!creating && (
           <button
-            onClick={() => setInviting(true)}
+            onClick={() => setCreating(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-xl transition-opacity hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            Invitar usuario
+            Nuevo usuario
           </button>
         )}
       </div>
 
-      {/* Formulario de invitación */}
-      {inviting && (
+      {/* Formulario de creación */}
+      {creating && (
         <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Invitar nuevo usuario</h3>
-          <form onSubmit={handleInvite} className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Crear nuevo usuario</h3>
+          <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
@@ -178,33 +196,77 @@ export default function UsersView() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Rol</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Contraseña inicial</label>
+                <input
+                  type="text" required
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
-            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
-              Se enviará un email con un link para que el usuario establezca su contraseña.
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Rol</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {ROLE_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
+                ))}
+              </select>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-700">
+              Comparte el email y la contraseña con el usuario por un canal seguro (ej: mensaje directo).
+              El usuario podrá cambiarla desde la app.
             </div>
             <div className="flex gap-2.5">
-              <button type="button" onClick={() => { setInviting(false); setError(null) }}
+              <button type="button" onClick={() => { setCreating(false); setError(null) }}
                 className="flex-1 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
                 Cancelar
               </button>
-              <button type="submit" disabled={saving === 'invite'}
+              <button type="submit" disabled={saving === 'create'}
                 className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
-                {saving === 'invite' ? 'Enviando…' : 'Enviar invitación'}
+                {saving === 'create' ? 'Creando…' : 'Crear usuario'}
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Modal de reset de contraseña */}
+      {resetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Cambiar contraseña</h3>
+            <p className="text-xs text-gray-400 mb-4">{resetUser.email}</p>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Nueva contraseña</label>
+                <input
+                  type="text" required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-2.5">
+                <button type="button" onClick={() => { setResetUser(null); setNewPassword('') }}
+                  className="flex-1 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving === resetUser.id}
+                  className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
+                  style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+                  {saving === resetUser.id ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -258,6 +320,19 @@ export default function UsersView() {
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {isBusy && (
                     <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 8px' }} />
+                  )}
+                  {/* Reset contraseña */}
+                  {!isSelf && (
+                    <button
+                      onClick={() => { setResetUser({ id: u.id, email: u.email }); setNewPassword('') }}
+                      disabled={isBusy}
+                      className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40"
+                      title="Cambiar contraseña"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                    </button>
                   )}
                   {/* Permisos por centro — solo para editor/viewer */}
                   {!isSelf && u.role !== 'admin' && (

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const ROLE_LABEL = { admin: 'Administrador', editor: 'Editor', viewer: 'Visualizador' }
 const ROLE_STYLE = {
@@ -59,6 +61,26 @@ export default function Layout({ view, onViewChange, children }) {
   const roleStyle = ROLE_STYLE[role] ?? ROLE_STYLE.viewer
   const visibleNav = NAV_ITEMS.filter((i) => !i.adminOnly || role === 'admin')
   const current = visibleNav.find((i) => i.id === view)
+
+  const [showChangePwd, setShowChangePwd] = useState(false)
+  const [pwd, setPwd]       = useState('')
+  const [pwdConfirm, setPwdConfirm] = useState('')
+  const [pwdError, setPwdError]     = useState(null)
+  const [pwdOk, setPwdOk]           = useState(false)
+  const [pwdLoading, setPwdLoading] = useState(false)
+
+  const handleChangePwd = async (e) => {
+    e.preventDefault()
+    setPwdError(null)
+    if (pwd.length < 8)       { setPwdError('Mínimo 8 caracteres'); return }
+    if (pwd !== pwdConfirm)   { setPwdError('Las contraseñas no coinciden'); return }
+    setPwdLoading(true)
+    const { error } = await supabase.auth.updateUser({ password: pwd })
+    setPwdLoading(false)
+    if (error) { setPwdError(error.message); return }
+    setPwdOk(true)
+    setTimeout(() => { setShowChangePwd(false); setPwd(''); setPwdConfirm(''); setPwdOk(false) }, 1500)
+  }
 
   return (
     <div className="flex h-screen w-full" style={{ background: '#f0f4f8' }}>
@@ -141,6 +163,18 @@ export default function Layout({ view, onViewChange, children }) {
             </span>
           </div>
           <button
+            onClick={() => setShowChangePwd(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            Cambiar contraseña
+          </button>
+          <button
             onClick={logout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors"
             style={{ color: 'rgba(255,255,255,0.4)' }}
@@ -154,6 +188,49 @@ export default function Layout({ view, onViewChange, children }) {
           </button>
         </div>
       </aside>
+
+      {/* Modal cambiar contraseña */}
+      {showChangePwd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Cambiar contraseña</h3>
+            <p className="text-xs text-gray-400 mb-4">{email}</p>
+            {pwdOk ? (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 text-sm px-4 py-3 rounded-xl">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                Contraseña actualizada
+              </div>
+            ) : (
+              <form onSubmit={handleChangePwd} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Nueva contraseña</label>
+                  <input type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Confirmar</label>
+                  <input type="password" required value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)}
+                    placeholder="Repite la contraseña"
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                {pwdError && <p className="text-xs text-red-500">{pwdError}</p>}
+                <div className="flex gap-2.5 pt-1">
+                  <button type="button" onClick={() => { setShowChangePwd(false); setPwd(''); setPwdConfirm(''); setPwdError(null) }}
+                    className="flex-1 py-2.5 text-sm font-medium border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={pwdLoading}
+                    className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
+                    style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+                    {pwdLoading ? 'Guardando…' : 'Guardar'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
