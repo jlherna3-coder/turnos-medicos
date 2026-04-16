@@ -134,6 +134,22 @@ function mapAgencia(a) {
   }
 }
 
+function mapCenterTemplate(t) {
+  return { id: t.id, centroId: t.centro_id, name: t.name, createdAt: t.created_at }
+}
+
+function mapTemplateSlot(s) {
+  return { id: s.id, templateId: s.template_id, category: s.category, schedule: s.schedule }
+}
+
+function mapWeekPlan(w) {
+  return { id: w.id, centroId: w.centro_id, weekStart: w.week_start, templateId: w.template_id }
+}
+
+function mapWeekOverride(o) {
+  return { id: o.id, centroId: o.centro_id, weekStart: o.week_start, slotId: o.slot_id, day: o.day, slot: o.slot, reason: o.reason }
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 const AppContext = createContext(null)
@@ -144,8 +160,12 @@ export function AppProvider({ children }) {
   const [territorios, setTerritorios] = useState([])
   const [agencias, setAgencias]       = useState([])
   const [centros, setCentros]         = useState([])
-  const [doctors, setDoctors]         = useState([])
-  const [loading, setLoading]         = useState(true)
+  const [doctors, setDoctors]             = useState([])
+  const [centerTemplates, setCenterTemplates] = useState([])
+  const [templateSlots, setTemplateSlots]     = useState([])
+  const [weekPlans, setWeekPlans]             = useState([])
+  const [weekOverrides, setWeekOverrides]     = useState([])
+  const [loading, setLoading]             = useState(true)
 
   // Centro activo persiste en localStorage (es solo una preferencia de UI)
   const [activeCentroId, setActiveCentroId] = useState(
@@ -164,11 +184,19 @@ export function AppProvider({ children }) {
       { data: aData, error: aErr },
       { data: cData, error: cErr },
       { data: dData, error: dErr },
+      { data: ctData },
+      { data: tsData },
+      { data: wpData },
+      { data: woData },
     ] = await Promise.all([
       supabase.from('territorios').select('*').order('name'),
       supabase.from('agencias').select('*').order('name'),
       supabase.from('centros').select('*').order('name'),
       supabase.from('doctors').select('*').order('name'),
+      supabase.from('center_templates').select('*').order('name'),
+      supabase.from('template_slots').select('*'),
+      supabase.from('week_plans').select('*').order('week_start'),
+      supabase.from('week_overrides').select('*').order('created_at'),
     ])
 
     if (tErr || aErr || cErr || dErr) {
@@ -191,11 +219,19 @@ export function AppProvider({ children }) {
       setAgencias(SEED_AGENCIAS.map(mapAgencia))
       setCentros(SEED_CENTROS.map(mapCentro))
       setDoctors(SEED_DOCTORS.map(mapDoctor))
+      setCenterTemplates([])
+      setTemplateSlots([])
+      setWeekPlans([])
+      setWeekOverrides([])
     } else {
       setTerritorios(tData)
       setAgencias((aData ?? []).map(mapAgencia))
       setCentros((cData ?? []).map(mapCentro))
       setDoctors((dData ?? []).map(mapDoctor))
+      setCenterTemplates((ctData ?? []).map(mapCenterTemplate))
+      setTemplateSlots((tsData ?? []).map(mapTemplateSlot))
+      setWeekPlans((wpData ?? []).map(mapWeekPlan))
+      setWeekOverrides((woData ?? []).map(mapWeekOverride))
     }
   }, [])
 
@@ -226,6 +262,26 @@ export function AppProvider({ children }) {
         async () => {
           const { data } = await supabase.from('territorios').select('*').order('name')
           if (data) setTerritorios(data)
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'center_templates' },
+        async () => {
+          const { data } = await supabase.from('center_templates').select('*').order('name')
+          if (data) setCenterTemplates(data.map(mapCenterTemplate))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'template_slots' },
+        async () => {
+          const { data } = await supabase.from('template_slots').select('*')
+          if (data) setTemplateSlots(data.map(mapTemplateSlot))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'week_plans' },
+        async () => {
+          const { data } = await supabase.from('week_plans').select('*').order('week_start')
+          if (data) setWeekPlans(data.map(mapWeekPlan))
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'week_overrides' },
+        async () => {
+          const { data } = await supabase.from('week_overrides').select('*').order('created_at')
+          if (data) setWeekOverrides(data.map(mapWeekOverride))
         })
       .subscribe()
 
@@ -294,6 +350,123 @@ export function AppProvider({ children }) {
     const { error } = await supabase.from('doctors').delete().eq('id', id)
     if (dbErr('deleteDoctor', error)) return
     setDoctors((p) => p.filter((d) => d.id !== id))
+  }
+
+  // ── CRUD center templates ──
+  const addTemplate = async (centroId, name, sourceTemplateId = null) => {
+    const newTemplate = { id: uuidv4(), centro_id: centroId, name }
+    const { error } = await supabase.from('center_templates').insert(newTemplate)
+    if (dbErr('addTemplate', error)) return null
+    const mapped = mapCenterTemplate(newTemplate)
+    setCenterTemplates((p) => [...p, mapped])
+    if (sourceTemplateId) {
+      const sourceSlots = templateSlots.filter((s) => s.templateId === sourceTemplateId)
+      if (sourceSlots.length > 0) {
+        const newSlots = sourceSlots.map((s) => ({
+          id: uuidv4(), template_id: mapped.id, category: s.category, schedule: s.schedule,
+        }))
+        const { error: sErr } = await supabase.from('template_slots').insert(newSlots)
+        if (!sErr) setTemplateSlots((p) => [...p, ...newSlots.map(mapTemplateSlot)])
+      }
+    }
+    return mapped.id
+  }
+
+  const updateTemplate = async (id, data) => {
+    const { error } = await supabase.from('center_templates').update({ name: data.name }).eq('id', id)
+    if (dbErr('updateTemplate', error)) return
+    setCenterTemplates((p) => p.map((t) => t.id === id ? { ...t, ...data } : t))
+  }
+
+  const deleteTemplate = async (id) => {
+    const { error } = await supabase.from('center_templates').delete().eq('id', id)
+    if (dbErr('deleteTemplate', error)) return
+    const slotIds = templateSlots.filter((s) => s.templateId === id).map((s) => s.id)
+    setWeekOverrides((p) => p.filter((o) => !slotIds.includes(o.slotId)))
+    setTemplateSlots((p) => p.filter((s) => s.templateId !== id))
+    setWeekPlans((p) => p.map((w) => w.templateId === id ? { ...w, templateId: null } : w))
+    setCenterTemplates((p) => p.filter((t) => t.id !== id))
+  }
+
+  // ── CRUD template slots ──
+  const addTemplateSlot = async (templateId, category, schedule) => {
+    const newSlot = { id: uuidv4(), template_id: templateId, category, schedule }
+    const { error } = await supabase.from('template_slots').insert(newSlot)
+    if (dbErr('addTemplateSlot', error)) return
+    setTemplateSlots((p) => [...p, mapTemplateSlot(newSlot)])
+  }
+
+  const updateTemplateSlot = async (id, data) => {
+    const dbData = {}
+    if (data.schedule  !== undefined) dbData.schedule  = data.schedule
+    if (data.category  !== undefined) dbData.category  = data.category
+    const { error } = await supabase.from('template_slots').update(dbData).eq('id', id)
+    if (dbErr('updateTemplateSlot', error)) return
+    setTemplateSlots((p) => p.map((s) => s.id === id ? { ...s, ...data } : s))
+  }
+
+  const deleteTemplateSlot = async (id) => {
+    const { error } = await supabase.from('template_slots').delete().eq('id', id)
+    if (dbErr('deleteTemplateSlot', error)) return
+    setWeekOverrides((p) => p.filter((o) => o.slotId !== id))
+    setTemplateSlots((p) => p.filter((s) => s.id !== id))
+  }
+
+  // ── Week plans ──
+  const setWeekPlan = async (centroId, weekStart, templateId) => {
+    if (!templateId) {
+      const existing = weekPlans.find((w) => w.centroId === centroId && w.weekStart === weekStart)
+      if (existing) {
+        const { error } = await supabase.from('week_plans').delete().eq('id', existing.id)
+        if (dbErr('clearWeekPlan', error)) return
+        setWeekPlans((p) => p.filter((w) => w.id !== existing.id))
+      }
+      return
+    }
+    const row = { centro_id: centroId, week_start: weekStart, template_id: templateId }
+    const { data, error } = await supabase.from('week_plans')
+      .upsert(row, { onConflict: 'centro_id,week_start' }).select().single()
+    if (dbErr('setWeekPlan', error)) return
+    const mapped = mapWeekPlan(data)
+    setWeekPlans((p) => {
+      const exists = p.find((w) => w.centroId === centroId && w.weekStart === weekStart)
+      return exists ? p.map((w) => (w.centroId === centroId && w.weekStart === weekStart) ? mapped : w) : [...p, mapped]
+    })
+  }
+
+  // ── Week overrides ──
+  const upsertWeekOverride = async (centroId, weekStart, slotId, day, slot, reason = '') => {
+    const row = { centro_id: centroId, week_start: weekStart, slot_id: slotId, day, slot, reason }
+    const { data, error } = await supabase.from('week_overrides')
+      .upsert(row, { onConflict: 'slot_id,week_start,day' }).select().single()
+    if (dbErr('upsertWeekOverride', error)) return
+    const mapped = mapWeekOverride(data)
+    setWeekOverrides((p) => {
+      const exists = p.find((o) => o.slotId === slotId && o.weekStart === weekStart && o.day === day)
+      return exists
+        ? p.map((o) => (o.slotId === slotId && o.weekStart === weekStart && o.day === day) ? mapped : o)
+        : [...p, mapped]
+    })
+  }
+
+  const deleteWeekOverride = async (id) => {
+    const { error } = await supabase.from('week_overrides').delete().eq('id', id)
+    if (dbErr('deleteWeekOverride', error)) return
+    setWeekOverrides((p) => p.filter((o) => o.id !== id))
+  }
+
+  // ── Helper: horario efectivo de una semana (template + overrides) ──
+  const getEffectiveWeekSlots = (centroId, weekStart) => {
+    const plan = weekPlans.find((p) => p.centroId === centroId && p.weekStart === weekStart)
+    if (!plan?.templateId) return []
+    const slots = templateSlots.filter((s) => s.templateId === plan.templateId)
+    const overrides = weekOverrides.filter((o) => o.centroId === centroId && o.weekStart === weekStart)
+    return slots.map((slot) => {
+      const effectiveSchedule = { ...slot.schedule }
+      const slotOverrides = overrides.filter((o) => o.slotId === slot.id)
+      slotOverrides.forEach((o) => { effectiveSchedule[o.day] = o.slot })
+      return { ...slot, effectiveSchedule, hasOverrides: slotOverrides.length > 0, overrides: slotOverrides }
+    })
   }
 
   // ── CRUD territorios ──
@@ -395,6 +568,11 @@ export function AppProvider({ children }) {
       addTerritorio, updateTerritorio, deleteTerritorio,
       addAgencia,    updateAgencia,    deleteAgencia,
       addCentro,     updateCentro,     deleteCentro,
+      centerTemplates, templateSlots, weekPlans, weekOverrides,
+      addTemplate, updateTemplate, deleteTemplate,
+      addTemplateSlot, updateTemplateSlot, deleteTemplateSlot,
+      setWeekPlan, upsertWeekOverride, deleteWeekOverride,
+      getEffectiveWeekSlots,
     }}>
       {children}
     </AppContext.Provider>

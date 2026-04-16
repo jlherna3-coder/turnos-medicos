@@ -7,6 +7,7 @@ import SetPasswordView from './components/SetPasswordView'
 import CentersView from './components/CentersView'
 import DoctorPanel from './components/DoctorPanel'
 import CoverageView from './components/CoverageView'
+import PlanningView from './components/PlanningView'
 import UsersView from './components/UsersView'
 
 function AppContent() {
@@ -35,6 +36,7 @@ function AppContent() {
       <Layout view={view} onViewChange={setView}>
         {view === 'centers'  && <CentersView />}
         {view === 'doctors'  && <DoctorPanel />}
+        {view === 'planning'  && <PlanningView />}
         {view === 'coverage' && <CoverageView />}
         {view === 'users'    && <UsersView />}
       </Layout>
