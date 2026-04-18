@@ -139,7 +139,7 @@ function NewTemplateForm({ centroId, templates, onSave, onCancel, addTemplate })
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={!name.trim() || saving}
           className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+          style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
           {saving ? 'Creando…' : 'Crear'}
         </button>
         <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100">
@@ -223,7 +223,7 @@ export default function SemanaTipoView() {
             <button
               onClick={() => setCreating(true)}
               className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-              style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+              style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
               + Nueva semana tipo
             </button>
           )}
@@ -282,7 +282,7 @@ export default function SemanaTipoView() {
                 onClick={() => setSubView(id)}
                 className="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
                 style={subView === id
-                  ? { borderColor: '#3b82f6', color: '#3b82f6' }
+                  ? { borderColor: '#4F8DF7', color: '#4F8DF7' }
                   : { borderColor: 'transparent', color: '#64748b' }}
               >
                 {label}

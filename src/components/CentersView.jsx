@@ -80,7 +80,7 @@ function InlineForm({ fields, initial, onSave, onCancel, showColorPicker }) {
         </button>
         <button type="submit"
           className="flex-1 py-2 text-xs font-medium rounded-lg text-white"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+          style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
           Guardar
         </button>
       </div>

@@ -232,7 +232,7 @@ export default function PermissionsModal({ userId, userEmail, onClose }) {
             </button>
             <button onClick={save} disabled={saving}
               className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+              style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}>
               {saving ? 'Guardando…' : 'Guardar permisos'}
             </button>
           </div>

@@ -169,7 +169,7 @@ export default function UsersView() {
           <button
             onClick={() => setCreating(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+            style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -229,7 +229,7 @@ export default function UsersView() {
               </button>
               <button type="submit" disabled={saving === 'create'}
                 className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+                style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}>
                 {saving === 'create' ? 'Creando…' : 'Crear usuario'}
               </button>
             </div>
@@ -261,7 +261,7 @@ export default function UsersView() {
                 </button>
                 <button type="submit" disabled={saving === resetUser.id}
                   className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+                  style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}>
                   {saving === resetUser.id ? 'Guardando…' : 'Guardar'}
                 </button>
               </div>
@@ -319,7 +319,7 @@ export default function UsersView() {
                 {/* Acciones */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {isBusy && (
-                    <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 8px' }} />
+                    <div style={{ width: 18, height: 18, border: '2px solid #e2e8f0', borderTopColor: '#4F8DF7', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 8px' }} />
                   )}
                   {/* Reset contraseña */}
                   {!isSelf && (

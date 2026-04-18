@@ -140,7 +140,7 @@ function SlotScheduleEditor({ schedule, onChange }) {
               type="button"
               onClick={() => onChange({ ...schedule, [key]: active ? null : { start: '08:00', end: '17:00' } })}
               className="w-10 h-6 rounded text-xs font-semibold transition-colors flex-shrink-0"
-              style={active ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#f1f5f9', color: '#94a3b8' }}
+              style={active ? { backgroundColor: '#4F8DF7', color: 'white' } : { backgroundColor: '#f1f5f9', color: '#94a3b8' }}
             >
               {short}
             </button>
@@ -212,7 +212,7 @@ function TemplateEditor({ centroId, initialTemplate, allTemplates, allSlots, onD
         <div className="flex gap-2">
           <button onClick={handleCreate} disabled={!name.trim() || saving}
             className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+            style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
             {saving ? 'Creando…' : 'Continuar →'}
           </button>
           <button onClick={onDone} className="px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100">
@@ -228,7 +228,7 @@ function TemplateEditor({ centroId, initialTemplate, allTemplates, allSlots, onD
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">{isEditing ? initialTemplate.name : name}</h3>
         <button onClick={onDone} className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+          style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
           Listo
         </button>
       </div>
@@ -480,7 +480,7 @@ function OverrideForm({ effectiveSlots, onSave, onCancel }) {
             <button key={opt.value} type="button" onClick={() => setType(opt.value)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
               style={type === opt.value
-                ? { background: '#3b82f6', color: 'white', borderColor: '#3b82f6' }
+                ? { background: '#4F8DF7', color: 'white', borderColor: '#4F8DF7' }
                 : { background: 'white', color: '#64748b', borderColor: '#e2e8f0' }}>
               {opt.label}
             </button>
@@ -530,7 +530,7 @@ function OverrideForm({ effectiveSlots, onSave, onCancel }) {
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={!slotId}
           className="px-4 py-1.5 rounded-xl text-sm font-medium text-white disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+          style={{ background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)' }}>
           Guardar
         </button>
         <button onClick={onCancel} className="px-4 py-1.5 rounded-xl text-sm text-gray-500 hover:bg-gray-100">

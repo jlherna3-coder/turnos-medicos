@@ -2,11 +2,16 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import logoAchs from '../assets/logo-achs-salud.svg'
+
+const BRAND_PRIMARY   = '#4F8DF7'
+const BRAND_SECONDARY = '#3C6AD4'
+const BRAND_GRADIENT  = `linear-gradient(135deg, ${BRAND_PRIMARY}, ${BRAND_SECONDARY})`
 
 const ROLE_LABEL = { admin: 'Administrador', editor: 'Editor', viewer: 'Visualizador' }
 const ROLE_STYLE = {
   admin:  { bg: '#ede9fe', color: '#6d28d9' },
-  editor: { bg: '#dbeafe', color: '#1d4ed8' },
+  editor: { bg: '#e0eaff', color: '#3C6AD4' },
   viewer: { bg: '#f1f5f9', color: '#475569' },
 }
 
@@ -63,10 +68,10 @@ export default function Layout({ view, onViewChange, children }) {
   const current = visibleNav.find((i) => i.id === view)
 
   const [showChangePwd, setShowChangePwd] = useState(false)
-  const [pwd, setPwd]       = useState('')
+  const [pwd, setPwd]             = useState('')
   const [pwdConfirm, setPwdConfirm] = useState('')
-  const [pwdError, setPwdError]     = useState(null)
-  const [pwdOk, setPwdOk]           = useState(false)
+  const [pwdError, setPwdError]   = useState(null)
+  const [pwdOk, setPwdOk]         = useState(false)
   const [pwdLoading, setPwdLoading] = useState(false)
 
   const handleChangePwd = async (e) => {
@@ -91,21 +96,8 @@ export default function Layout({ view, onViewChange, children }) {
         style={{ background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' }}
       >
         {/* Logo */}
-        <div className="px-5 pt-6 pb-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
-            >
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-white text-sm font-semibold leading-tight">MediTurno</p>
-              <p className="text-white/40 text-xs">Centro Médico</p>
-            </div>
-          </div>
+        <div className="px-5 pt-5 pb-4 border-b border-white/10">
+          <img src={logoAchs} alt="ACHS Salud" className="h-8 w-auto" />
         </div>
 
         {/* Nav */}
@@ -119,16 +111,16 @@ export default function Layout({ view, onViewChange, children }) {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
                 style={
                   active
-                    ? { background: 'rgba(59,130,246,0.2)', color: '#93c5fd' }
+                    ? { background: 'rgba(79,141,247,0.18)', color: '#A8C8FB' }
                     : { color: 'rgba(255,255,255,0.5)' }
                 }
                 onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)' } }}
                 onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' } }}
               >
-                <span style={active ? { color: '#60a5fa' } : {}}>{item.icon}</span>
+                <span style={active ? { color: '#7BADF9' } : {}}>{item.icon}</span>
                 {item.label}
                 {active && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND_PRIMARY }} />
                 )}
               </button>
             )
@@ -141,12 +133,12 @@ export default function Layout({ view, onViewChange, children }) {
             <p className="text-white/30 text-xs px-2 mb-1.5 uppercase tracking-wide font-medium">Centro activo</p>
             <div
               className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
-              style={{ background: 'rgba(59,130,246,0.15)' }}
+              style={{ background: 'rgba(79,141,247,0.15)' }}
               onClick={() => onViewChange('centers')}
               title="Ir a Centros para cambiar"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-              <p className="text-blue-300 text-xs font-medium truncate leading-tight">{activeCentro.name}</p>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#7BADF9' }} />
+              <p className="text-xs font-medium truncate leading-tight" style={{ color: '#A8C8FB' }}>{activeCentro.name}</p>
             </div>
           </div>
         )}
@@ -206,13 +198,13 @@ export default function Layout({ view, onViewChange, children }) {
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Nueva contraseña</label>
                   <input type="password" required value={pwd} onChange={(e) => setPwd(e.target.value)}
                     placeholder="Mínimo 8 caracteres"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1.5">Confirmar</label>
                   <input type="password" required value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)}
                     placeholder="Repite la contraseña"
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 {pwdError && <p className="text-xs text-red-500">{pwdError}</p>}
                 <div className="flex gap-2.5 pt-1">
@@ -222,7 +214,7 @@ export default function Layout({ view, onViewChange, children }) {
                   </button>
                   <button type="submit" disabled={pwdLoading}
                     className="flex-1 py-2.5 text-sm font-medium text-white rounded-xl disabled:opacity-60"
-                    style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+                    style={{ background: BRAND_GRADIENT }}>
                     {pwdLoading ? 'Guardando…' : 'Guardar'}
                   </button>
                 </div>
@@ -239,21 +231,14 @@ export default function Layout({ view, onViewChange, children }) {
         <header className="bg-white border-b border-gray-200/80 px-4 md:px-7 py-3 md:py-4 flex items-center justify-between">
           {/* Logo mobile */}
           <div className="flex items-center gap-3">
-            <div
-              className="md:hidden w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
-            >
-              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
+            <img src={logoAchs} alt="ACHS Salud" className="md:hidden h-7 w-auto" />
             <div>
               <h1 className="text-sm font-semibold text-gray-900">{current?.label}</h1>
               <p className="text-xs text-gray-400 hidden md:block mt-0.5">
-                {view === 'centers'  && 'Territorios, agencias y centros de salud ambulatorios'}
-                {view === 'doctors'  && 'Gestiona el equipo médico y sus horarios semanales'}
-                {view === 'coverage' && 'Visualiza la cobertura médica por franja horaria'}
-                {view === 'users'    && 'Invita usuarios y gestiona sus permisos de acceso'}
+                {view === 'centers'    && 'Territorios, agencias y centros de salud ambulatorios'}
+                {view === 'semana-tipo' && 'Configura los turnos tipo por categoría y horario'}
+                {view === 'planning'   && 'Asigna semanas tipo al calendario y gestiona cambios puntuales'}
+                {view === 'users'      && 'Invita usuarios y gestiona sus permisos de acceso'}
               </p>
             </div>
           </div>
@@ -261,11 +246,11 @@ export default function Layout({ view, onViewChange, children }) {
           {/* Centro activo mobile */}
           {activeCentro && (
             <button
-              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-blue-600 truncate max-w-[140px]"
-              style={{ background: 'rgba(59,130,246,0.08)' }}
+              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium truncate max-w-[140px]"
+              style={{ background: 'rgba(79,141,247,0.08)', color: BRAND_PRIMARY }}
               onClick={() => onViewChange('centers')}
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND_PRIMARY }} />
               <span className="truncate">{activeCentro.name}</span>
             </button>
           )}
@@ -288,12 +273,12 @@ export default function Layout({ view, onViewChange, children }) {
                 key={item.id}
                 onClick={() => onViewChange(item.id)}
                 className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
-                style={{ color: active ? '#3b82f6' : '#94a3b8' }}
+                style={{ color: active ? BRAND_PRIMARY : '#94a3b8' }}
               >
                 {item.icon}
                 <span className="text-xs font-medium">{item.label}</span>
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-500 rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style={{ backgroundColor: BRAND_PRIMARY }} />
                 )}
               </button>
             )

@@ -185,7 +185,7 @@ export default function CoverageView({ doctorsOverride, updateDoctorOverride } =
                 className="flex flex-col items-center px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150"
                 style={
                   active
-                    ? { background: 'linear-gradient(135deg,#3b82f6,#6366f1)', color:'white', boxShadow:'0 4px 12px rgba(99,102,241,0.3)' }
+                    ? { background: 'linear-gradient(135deg,#4F8DF7,#3C6AD4)', color:'white', boxShadow:'0 4px 12px rgba(60,106,212,0.3)' }
                     : hasCenter
                     ? { background:'#f8fafc', color:'#475569', border:'1px solid #e2e8f0' }
                     : { background:'#f1f5f9', color:'#cbd5e1', cursor:'not-allowed', border:'1px solid transparent' }

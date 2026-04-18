@@ -43,7 +43,7 @@ export default function SetPasswordView({ onDone }) {
         <div className="text-center mb-8">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+            style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}
           >
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -95,7 +95,7 @@ export default function SetPasswordView({ onDone }) {
               type="submit"
               disabled={loading}
               className="w-full py-3 text-sm font-semibold text-white rounded-xl transition-opacity hover:opacity-90 disabled:opacity-60 mt-2"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+              style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}
             >
               {loading ? 'Guardando…' : 'Guardar y entrar'}
             </button>

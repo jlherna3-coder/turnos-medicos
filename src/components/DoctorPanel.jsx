@@ -210,7 +210,7 @@ function DoctorForm({ initial, onSave, onCancel, templateMode = false }) {
           </button>
           <button type="submit"
             className="flex-1 py-2.5 text-sm font-medium rounded-xl text-white transition-colors"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+            style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}>
             Guardar
           </button>
         </div>
@@ -387,7 +387,7 @@ export default function DoctorPanel({
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-xl transition-opacity hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+            style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

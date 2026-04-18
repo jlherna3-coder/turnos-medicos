@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import logoAchs from '../assets/logo-achs-salud.svg'
 
 export default function LoginView() {
   const { login } = useAuth()
@@ -26,16 +27,8 @@ export default function LoginView() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
-          >
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-          <h1 className="text-white text-2xl font-bold">MediTurno</h1>
-          <p className="text-white/50 text-sm mt-1">Gestión de turnos médicos</p>
+          <img src={logoAchs} alt="ACHS Salud" className="h-10 w-auto mx-auto mb-5" style={{ filter: 'brightness(0) invert(1)' }} />
+          <p className="text-white/50 text-sm">Gestión de turnos médicos</p>
         </div>
 
         {/* Formulario */}
@@ -80,7 +73,7 @@ export default function LoginView() {
               type="submit"
               disabled={loading}
               className="w-full py-3 text-sm font-semibold text-white rounded-xl transition-opacity hover:opacity-90 disabled:opacity-60 mt-2"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+              style={{ background: 'linear-gradient(135deg, #4F8DF7, #3C6AD4)' }}
             >
               {loading ? 'Ingresando…' : 'Ingresar'}
             </button>
