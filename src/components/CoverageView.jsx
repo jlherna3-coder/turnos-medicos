@@ -134,8 +134,11 @@ function DoctorRow({ doc, selectedDay, rangeStart, rangeWidth, onSlotChange }) {
 
 // ── Vista principal ─────────────────────────────────────────────────────────
 
-export default function CoverageView() {
-  const { doctors, activeCenterSchedule: centerSchedule, activeCentro, updateDoctor, activeCanWrite } = useApp()
+export default function CoverageView({ doctorsOverride, updateDoctorOverride } = {}) {
+  const ctx = useApp()
+  const doctors     = doctorsOverride      ?? ctx.doctors
+  const updateDoctor = updateDoctorOverride ?? ctx.updateDoctor
+  const { activeCenterSchedule: centerSchedule, activeCentro, activeCanWrite } = ctx
   const [selectedDay, setSelectedDay] = useState('mon')
 
   const centerSlot = centerSchedule?.[selectedDay]

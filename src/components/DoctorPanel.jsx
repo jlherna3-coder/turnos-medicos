@@ -132,7 +132,7 @@ function CenterScheduleConfig() {
 }
 
 // ── Formulario de médico ───────────────────────────────────────────────────
-function DoctorForm({ initial, onSave, onCancel }) {
+function DoctorForm({ initial, onSave, onCancel, templateMode = false }) {
   const [form, setForm] = useState(
     initial ?? { name: '', category: 'AP', color: '#3b82f6', weeklyTemplate: DEFAULT_TEMPLATE }
   )
@@ -143,21 +143,23 @@ function DoctorForm({ initial, onSave, onCancel }) {
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-blue-500" />
         <h3 className="text-sm font-semibold text-gray-900">
-          {initial ? 'Editar médico' : 'Nuevo médico'}
+          {initial ? (templateMode ? 'Editar turno' : 'Editar médico') : (templateMode ? 'Nuevo turno' : 'Nuevo médico')}
         </h3>
       </div>
 
       <form onSubmit={(e) => { e.preventDefault(); onSave(form) }} className="p-5 space-y-5">
-        {/* Nombre + categoría */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Nombre</label>
-            <input
-              required value={form.name} onChange={set('name')}
-              placeholder="Ej: Dr. Pérez"
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        {/* Nombre + categoría — nombre oculto en templateMode */}
+        <div className={templateMode ? '' : 'grid grid-cols-2 gap-4'}>
+          {!templateMode && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Nombre</label>
+              <input
+                required value={form.name} onChange={set('name')}
+                placeholder="Ej: Dr. Pérez"
+                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Categoría</label>
             <select
@@ -171,23 +173,25 @@ function DoctorForm({ initial, onSave, onCancel }) {
           </div>
         </div>
 
-        {/* Color */}
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-2">Color de identificación</label>
-          <div className="flex gap-2.5 flex-wrap">
-            {COLORS.map((c) => (
-              <button
-                key={c} type="button"
-                onClick={() => setForm((f) => ({ ...f, color: c }))}
-                className="w-8 h-8 rounded-full transition-all duration-150 hover:scale-110"
-                style={{
-                  backgroundColor: c,
-                  boxShadow: form.color === c ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none',
-                }}
-              />
-            ))}
+        {/* Color — oculto en templateMode */}
+        {!templateMode && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">Color de identificación</label>
+            <div className="flex gap-2.5 flex-wrap">
+              {COLORS.map((c) => (
+                <button
+                  key={c} type="button"
+                  onClick={() => setForm((f) => ({ ...f, color: c }))}
+                  className="w-8 h-8 rounded-full transition-all duration-150 hover:scale-110"
+                  style={{
+                    backgroundColor: c,
+                    boxShadow: form.color === c ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none',
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Horario */}
         <div>
@@ -306,8 +310,20 @@ function DoctorCard({ doc, onEdit, onDelete }) {
 // ── Panel principal ────────────────────────────────────────────────────────
 const CATEGORY_ORDER = ['AP', 'MDT', 'TMT']
 
-export default function DoctorPanel() {
-  const { doctors, addDoctor, updateDoctor, deleteDoctor, activeCentro, activeCanWrite } = useApp()
+export default function DoctorPanel({
+  doctorsOverride,
+  addDoctorOverride,
+  updateDoctorOverride,
+  deleteDoctorOverride,
+  showCenterConfig = true,
+  templateMode = false,
+} = {}) {
+  const ctx = useApp()
+  const doctors     = doctorsOverride      ?? ctx.doctors
+  const addDoctor   = addDoctorOverride    ?? ctx.addDoctor
+  const updateDoctor = updateDoctorOverride ?? ctx.updateDoctor
+  const deleteDoctor = deleteDoctorOverride ?? ctx.deleteDoctor
+  const { activeCentro, activeCanWrite } = ctx
   const canWrite = activeCanWrite
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -356,7 +372,7 @@ export default function DoctorPanel() {
       </div>
 
       {/* Horario del centro */}
-      <CenterScheduleConfig />
+      {showCenterConfig && <CenterScheduleConfig />}
 
       {/* Header sección médicos */}
       <div className="flex items-center justify-between">
@@ -376,13 +392,14 @@ export default function DoctorPanel() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            Agregar médico
+            {templateMode ? 'Agregar turno' : 'Agregar médico'}
           </button>
         )}
       </div>
 
       {adding && (
         <DoctorForm
+          templateMode={templateMode}
           onSave={(f) => { addDoctor(f); setAdding(false) }}
           onCancel={() => setAdding(false)}
         />
@@ -413,6 +430,7 @@ export default function DoctorPanel() {
                   <DoctorForm
                     key={doc.id}
                     initial={doc}
+                    templateMode={templateMode}
                     onSave={(f) => { updateDoctor(doc.id, f); setEditingId(null) }}
                     onCancel={() => setEditingId(null)}
                   />

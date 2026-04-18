@@ -5,8 +5,7 @@ import Layout from './components/Layout'
 import LoginView from './components/LoginView'
 import SetPasswordView from './components/SetPasswordView'
 import CentersView from './components/CentersView'
-import DoctorPanel from './components/DoctorPanel'
-import CoverageView from './components/CoverageView'
+import SemanaTipoView from './components/SemanaTipoView'
 import PlanningView from './components/PlanningView'
 import UsersView from './components/UsersView'
 
@@ -35,10 +34,9 @@ function AppContent() {
     <AppProvider>
       <Layout view={view} onViewChange={setView}>
         {view === 'centers'  && <CentersView />}
-        {view === 'doctors'  && <DoctorPanel />}
-        {view === 'planning'  && <PlanningView />}
-        {view === 'coverage' && <CoverageView />}
-        {view === 'users'    && <UsersView />}
+        {view === 'semana-tipo' && <SemanaTipoView />}
+        {view === 'planning'   && <PlanningView />}
+        {view === 'users'      && <UsersView />}
       </Layout>
     </AppProvider>
   )

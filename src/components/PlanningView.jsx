@@ -552,82 +552,18 @@ export default function PlanningView() {
   const {
     activeCentroId, activeCentro, activeCenterSchedule, activeCanWrite,
     centerTemplates, templateSlots, weekPlans, weekOverrides,
-    addTemplate, updateTemplate, deleteTemplate,
-    addTemplateSlot, updateTemplateSlot, deleteTemplateSlot,
     setWeekPlan, upsertWeekOverride, deleteWeekOverride,
     getEffectiveWeekSlots,
   } = useApp()
-
-  const [editingTemplateId, setEditingTemplateId] = useState(null)
-  const [creatingTemplate, setCreatingTemplate]   = useState(false)
 
   const centroId        = activeCentroId
   const centroTemplates = centerTemplates.filter((t) => t.centroId === centroId)
   const weeks           = useMemo(() => generateWeeks(), [])
   const currentWeek     = dateToStr(getMonday())
-  const centerSlot      = activeCenterSchedule?.mon ?? null  // referencia de horario para el eje
-
-  const showEditor = creatingTemplate || Boolean(editingTemplateId)
+  const centerSlot      = activeCenterSchedule?.mon ?? null
 
   return (
     <div className="space-y-5">
-
-      {/* ── Semanas tipo ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="font-semibold text-gray-900">Semanas Tipo</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{activeCentro?.name ?? 'Sin centro'}</p>
-          </div>
-          {activeCanWrite && !showEditor && (
-            <button
-              onClick={() => setCreatingTemplate(true)}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-white"
-              style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
-              + Nueva semana tipo
-            </button>
-          )}
-        </div>
-
-        {centroTemplates.length === 0 && !showEditor && (
-          <p className="text-sm text-gray-400 italic text-center py-6">
-            No hay semanas tipo para este centro. Crea una para comenzar a planificar.
-          </p>
-        )}
-
-        {!showEditor && centroTemplates.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {centroTemplates.map((t) => (
-              <TemplateCard
-                key={t.id}
-                template={t}
-                slots={templateSlots.filter((s) => s.templateId === t.id)}
-                onRename={(name) => updateTemplate(t.id, { name })}
-                onEdit={() => { setEditingTemplateId(t.id); setCreatingTemplate(false) }}
-                onDelete={() => {
-                  if (window.confirm(`¿Eliminar "${t.name}"? También se eliminarán las asignaciones en el calendario.`)) {
-                    deleteTemplate(t.id)
-                  }
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-        {showEditor && (
-          <TemplateEditor
-            centroId={centroId}
-            initialTemplate={editingTemplateId ? centroTemplates.find((t) => t.id === editingTemplateId) : null}
-            allTemplates={centerTemplates}
-            allSlots={templateSlots}
-            onDone={() => { setCreatingTemplate(false); setEditingTemplateId(null) }}
-            addTemplate={addTemplate}
-            addTemplateSlot={addTemplateSlot}
-            updateTemplateSlot={updateTemplateSlot}
-            deleteTemplateSlot={deleteTemplateSlot}
-          />
-        )}
-      </div>
 
       {/* ── Calendario ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -638,7 +574,7 @@ export default function PlanningView() {
 
         {centroTemplates.length === 0 ? (
           <p className="text-sm text-gray-400 italic text-center py-6">
-            Crea al menos una semana tipo para comenzar a planificar.
+            Ve a <strong>Semanas Tipo</strong> y crea al menos una para poder planificar semanas.
           </p>
         ) : (
           <>
