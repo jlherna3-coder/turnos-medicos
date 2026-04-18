@@ -54,6 +54,59 @@ function generateWeeks() {
   return Array.from({ length: 28 }, (_, i) => dateToStr(addWeeks(today, i - 4)))
 }
 
+// ── FTE ──────────────────────────────────────────────────────────────────────
+
+const FTE_MIN = 39 * 60  // 39 horas en minutos
+
+function calcScheduleFTE(schedule) {
+  if (!schedule) return 0
+  return Object.values(schedule)
+    .filter(Boolean)
+    .reduce((sum, s) => {
+      if (!s) return sum
+      let min = timeToMin(s.end) - timeToMin(s.start) - 30 // colación 30 min
+      if (s.absentFrom && s.absentTo) {
+        min -= Math.max(timeToMin(s.absentTo) - timeToMin(s.absentFrom), 0)
+      }
+      return sum + Math.max(min, 0)
+    }, 0) / FTE_MIN
+}
+
+function calcWeekFTE(effectiveSlots, useEffective = false) {
+  return effectiveSlots.reduce((sum, slot) => {
+    const sch = useEffective ? slot.effectiveSchedule : slot.schedule
+    return sum + calcScheduleFTE(sch)
+  }, 0)
+}
+
+function formatFTE(n) { return n.toFixed(2) }
+
+function FTEBadge({ baseFTE, effectiveFTE, hasTemplate }) {
+  if (!hasTemplate) return <span className="text-xs text-gray-300">—</span>
+  const delta = effectiveFTE - baseFTE
+  const hasDelta = Math.abs(delta) > 0.001
+  return (
+    <div className="text-right leading-tight">
+      <span className="text-xs font-semibold text-gray-700">{formatFTE(hasDelta ? effectiveFTE : baseFTE)} FTE</span>
+      {hasDelta && (
+        <div className="text-xs font-medium" style={{ color: delta < 0 ? '#ef4444' : '#10b981' }}>
+          {delta > 0 ? '+' : ''}{formatFTE(delta)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Formato de override para mostrar ─────────────────────────────────────────
+
+function formatOverrideSlot(slot) {
+  if (!slot) return 'Ausente todo el día'
+  if (slot.absentFrom && slot.absentTo) {
+    return `Ausente ${slot.absentFrom}–${slot.absentTo}`
+  }
+  return `${slot.start} – ${slot.end}`
+}
+
 // ── Estilos por categoría ────────────────────────────────────────────────────
 
 const CATEGORY_COLOR = { AP: '#3b82f6', MDT: '#10b981', TMT: '#f59e0b' }
@@ -351,17 +404,41 @@ function WeekCoverageChart({ effectiveSlots, centerSlot }) {
 // ── Formulario de cambio puntual ──────────────────────────────────────────────
 
 function OverrideForm({ effectiveSlots, onSave, onCancel }) {
-  const [slotId, setSlotId]   = useState('')
-  const [day, setDay]         = useState('mon')
-  const [type, setType]       = useState('absent')
-  const [start, setStart]     = useState('08:00')
-  const [end, setEnd]         = useState('17:00')
-  const [reason, setReason]   = useState('')
+  const [slotId, setSlotId]         = useState('')
+  const [day, setDay]               = useState('mon')
+  const [type, setType]             = useState('absent')
+  const [start, setStart]           = useState('08:00')
+  const [end, setEnd]               = useState('17:00')
+  const [absentFrom, setAbsentFrom] = useState('12:00')
+  const [absentTo, setAbsentTo]     = useState('14:00')
+  const [reason, setReason]         = useState('')
+
+  // Al cambiar turno o día, pre-llenar horario desde la plantilla
+  const selectedSlot = effectiveSlots.find((s) => s.id === slotId)
+  const templateDaySlot = selectedSlot?.schedule?.[day]
+
+  const handleSlotOrDayChange = (newSlotId, newDay) => {
+    const s = effectiveSlots.find((x) => x.id === newSlotId)
+    const tpl = s?.schedule?.[newDay]
+    if (tpl) { setStart(tpl.start); setEnd(tpl.end) }
+    if (newSlotId !== slotId) setSlotId(newSlotId)
+    if (newDay !== day) setDay(newDay)
+  }
 
   const handleSave = () => {
     if (!slotId) return
-    onSave({ slotId, day, slot: type === 'absent' ? null : { start, end }, reason })
+    let slot
+    if (type === 'absent')       slot = null
+    else if (type === 'custom')  slot = { start, end }
+    else if (type === 'partial') slot = { start: templateDaySlot?.start ?? start, end: templateDaySlot?.end ?? end, absentFrom, absentTo }
+    onSave({ slotId, day, slot, reason })
   }
+
+  const TYPES = [
+    { value: 'absent',  label: 'Ausente todo el día' },
+    { value: 'partial', label: 'Ausencia parcial' },
+    { value: 'custom',  label: 'Horario diferente' },
+  ]
 
   return (
     <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-3">
@@ -369,7 +446,8 @@ function OverrideForm({ effectiveSlots, onSave, onCancel }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-gray-500 mb-1">Turno</label>
-          <select value={slotId} onChange={e => setSlotId(e.target.value)}
+          <select value={slotId}
+            onChange={e => handleSlotOrDayChange(e.target.value, day)}
             className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
             <option value="">Seleccionar…</option>
             {effectiveSlots.map((slot) => {
@@ -380,16 +458,25 @@ function OverrideForm({ effectiveSlots, onSave, onCancel }) {
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Día</label>
-          <select value={day} onChange={e => setDay(e.target.value)}
+          <select value={day}
+            onChange={e => handleSlotOrDayChange(slotId, e.target.value)}
             className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
             {DAYS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
           </select>
         </div>
       </div>
+
+      {/* Horario base (referencia) */}
+      {templateDaySlot && (
+        <p className="text-xs text-gray-400">
+          Horario base: <span className="font-medium text-gray-600">{templateDaySlot.start} – {templateDaySlot.end}</span>
+        </p>
+      )}
+
       <div>
         <label className="block text-xs text-gray-500 mb-1">Tipo de cambio</label>
-        <div className="flex gap-2">
-          {[{ value: 'absent', label: 'Ausente' }, { value: 'custom', label: 'Horario diferente' }].map((opt) => (
+        <div className="flex flex-wrap gap-2">
+          {TYPES.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setType(opt.value)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
               style={type === opt.value
@@ -400,18 +487,43 @@ function OverrideForm({ effectiveSlots, onSave, onCancel }) {
           ))}
         </div>
       </div>
-      {type === 'custom' && (
-        <div className="flex items-center gap-2">
-          <input type="time" value={start} onChange={e => setStart(e.target.value)}
-            className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
-          <span className="text-gray-400">–</span>
-          <input type="time" value={end} onChange={e => setEnd(e.target.value)}
-            className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
+
+      {/* Ausencia parcial: horario de la ausencia dentro de la jornada */}
+      {type === 'partial' && (
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-500">Ausente entre</label>
+          <div className="flex items-center gap-2">
+            <input type="time" value={absentFrom} onChange={e => setAbsentFrom(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
+            <span className="text-gray-400 text-xs">y</span>
+            <input type="time" value={absentTo} onChange={e => setAbsentTo(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
+          </div>
+          {templateDaySlot && (
+            <p className="text-xs text-gray-400">
+              Impacto FTE del día: −{formatFTE((Math.max(timeToMin(absentTo) - timeToMin(absentFrom), 0)) / FTE_MIN)}
+            </p>
+          )}
         </div>
       )}
+
+      {/* Horario diferente */}
+      {type === 'custom' && (
+        <div className="space-y-1.5">
+          <label className="block text-xs text-gray-500">Nuevo horario</label>
+          <div className="flex items-center gap-2">
+            <input type="time" value={start} onChange={e => setStart(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
+            <span className="text-gray-400">–</span>
+            <input type="time" value={end} onChange={e => setEnd(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-300" />
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-xs text-gray-500 mb-1">Motivo (opcional)</label>
-        <input type="text" placeholder="ej: Licencia médica, Capacitación…"
+        <input type="text" placeholder="ej: Licencia médica, Capacitación, Citación…"
           value={reason} onChange={e => setReason(e.target.value)}
           className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
       </div>
@@ -436,7 +548,9 @@ function WeekRow({ weekStart, isCurrentWeek, isPast, plan, templates, effectiveS
 
   const [expanded, setExpanded]           = useState(false)
   const [showOverrideForm, setShowOverrideForm] = useState(false)
-  const template = templates.find((t) => t.id === plan?.templateId)
+  const template   = templates.find((t) => t.id === plan?.templateId)
+  const baseFTE    = calcWeekFTE(effectiveSlots, false)
+  const effectiveFTE = calcWeekFTE(effectiveSlots, true)
 
   return (
     <div className={`border-b border-gray-100 last:border-0 transition-opacity ${isPast ? 'opacity-55' : ''}`}>
@@ -465,6 +579,9 @@ function WeekRow({ weekStart, isCurrentWeek, isPast, plan, templates, effectiveS
               ? <span className="text-sm text-gray-700">{template.name}</span>
               : <span className="text-sm text-gray-400 italic">Sin asignar</span>
           )}
+        </div>
+        <div className="w-28 flex-shrink-0 flex justify-end">
+          <FTEBadge baseFTE={baseFTE} effectiveFTE={effectiveFTE} hasTemplate={Boolean(plan?.templateId)} />
         </div>
         <div className="w-24 text-center flex-shrink-0">
           {overrides.length > 0 && (
@@ -506,7 +623,7 @@ function WeekRow({ weekStart, isCurrentWeek, isPast, plan, templates, effectiveS
                         </span>
                         <span className="text-gray-600 flex-shrink-0">{dayLabel}:</span>
                         <span className="font-medium text-gray-800">
-                          {o.slot ? `${o.slot.start} – ${o.slot.end}` : 'Ausente'}
+                          {formatOverrideSlot(o.slot)}
                         </span>
                         {o.reason && <span className="text-gray-400 text-xs truncate">({o.reason})</span>}
                         {canWrite && (
@@ -583,6 +700,7 @@ export default function PlanningView() {
               <div className="w-14 text-xs font-semibold text-gray-400 uppercase tracking-wide">Sem.</div>
               <div className="w-48 text-xs font-semibold text-gray-400 uppercase tracking-wide">Periodo</div>
               <div className="flex-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Semana tipo</div>
+              <div className="w-28 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">FTE</div>
               <div className="w-24 text-xs font-semibold text-gray-400 uppercase tracking-wide text-center">Cambios</div>
               <div className="w-5" />
             </div>
